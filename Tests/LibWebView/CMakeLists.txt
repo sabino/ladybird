@@ -11,6 +11,7 @@ set(TEST_SOURCES
     TestHistoryStore.cpp
     TestHSTSStore.cpp
     TestNavigationLoader.cpp
+    TestNewTabSettings.cpp
     TestOmnibox.cpp
     TestPausedDebuggerOverlay.cpp
     TestProfile.cpp

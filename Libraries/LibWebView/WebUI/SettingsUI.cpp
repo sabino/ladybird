@@ -64,6 +64,13 @@ void SettingsUI::register_interfaces()
     register_interface("setNewTabPageURL"sv, [this](auto const& data) {
         set_new_tab_page_url(data);
     });
+    register_interface("setEnhancedNewTabEnabled"sv, [this](auto const& data) {
+        if (!data.is_bool())
+            return;
+        auto preferences = Application::settings().new_tab_settings().as_object();
+        preferences.set("enabled"sv, data.as_bool());
+        Application::settings().set_new_tab_settings(preferences);
+    });
     register_interface("setTabSettings"sv, [this](auto const& data) {
         set_tab_settings(data);
     });

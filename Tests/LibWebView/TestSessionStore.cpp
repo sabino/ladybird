@@ -1354,6 +1354,27 @@ TEST_CASE(take_on_empty_store_returns_nothing)
     EXPECT(!store->has_closed_units());
 }
 
+TEST_CASE(recently_closed_urls_are_limited_newest_first_and_do_not_consume_restore_state)
+{
+    auto store = SessionStore::create();
+    auto window = TRY_OR_FAIL(store->window_opened());
+    auto first = TRY_OR_FAIL(store->tab_opened({ .window_id = window, .initial_url = parse_url("https://first.example/"sv), .insertion_index = {}, .is_active = SessionStore::IsActive::No }));
+    auto second = TRY_OR_FAIL(store->tab_opened({ .window_id = window, .initial_url = parse_url("https://second.example/"sv), .insertion_index = {}, .is_active = SessionStore::IsActive::No }));
+    TRY_OR_FAIL(store->tab_closed({ .tab_id = first, .closed_at = UnixDateTime::now() }));
+    TRY_OR_FAIL(store->tab_closed({ .tab_id = second, .closed_at = UnixDateTime::now() }));
+
+    EXPECT(store->recently_closed_urls(0).is_empty());
+    EXPECT_EQ(store->recently_closed_urls(1).size(), 1uz);
+    auto urls = store->recently_closed_urls();
+    EXPECT_EQ(urls.size(), 2uz);
+    EXPECT_EQ(urls[0].serialize(), "https://second.example/"sv);
+    EXPECT_EQ(urls[1].serialize(), "https://first.example/"sv);
+    auto restored = TRY_OR_FAIL(store->take_most_recently_closed());
+    EXPECT(restored.has_value());
+    EXPECT_EQ(restored->tabs[0].active_url.serialize(), urls[0].serialize());
+    EXPECT_EQ(store->recently_closed_urls().size(), 1uz);
+}
+
 TEST_CASE(window_opened_errors_when_the_id_space_is_exhausted)
 {
     auto database = create_session_database();

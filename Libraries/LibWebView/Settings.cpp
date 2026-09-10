@@ -24,6 +24,7 @@
 namespace WebView {
 
 static constexpr auto NEW_TAB_PAGE_URL_KEY = "newTabPageURL"sv;
+static constexpr auto NEW_TAB_SETTINGS_KEY = "newTab"sv;
 
 static constexpr auto TAB_SETTINGS_KEY = "tabs"sv;
 static constexpr auto VERTICAL_TABS_ENABLED_KEY = "verticalTabsEnabled"sv;
@@ -236,6 +237,9 @@ Settings Settings::create(ByteString settings_path)
     if (auto tab_settings = settings_json.value().get(TAB_SETTINGS_KEY); tab_settings.has_value())
         settings.m_tab_settings = parse_tab_settings(*tab_settings);
 
+    if (auto new_tab_settings = settings_json.value().get(NEW_TAB_SETTINGS_KEY); new_tab_settings.has_value())
+        settings.m_new_tab_settings = parse_new_tab_settings(*new_tab_settings);
+
     if (auto show_menu_bar = settings_json.value().get_bool(SHOW_MENU_BAR_KEY); show_menu_bar.has_value())
         settings.m_show_menu_bar = *show_menu_bar;
 
@@ -333,6 +337,7 @@ Settings Settings::create(ByteString settings_path)
 Settings::Settings(ByteString settings_path)
     : m_settings_path(move(settings_path))
     , m_new_tab_page_url(URL::about_newtab())
+    , m_new_tab_settings(parse_new_tab_settings(JsonObject {}))
     , m_show_menu_bar(DEFAULT_SHOW_MENU_BAR)
     , m_show_bookmarks_bar(DEFAULT_SHOW_BOOKMARKS_BAR)
     , m_default_zoom_level_factor(INITIAL_ZOOM_LEVEL_FACTOR)
@@ -347,6 +352,7 @@ JsonValue Settings::serialize_json() const
 {
     JsonObject settings;
     settings.set(NEW_TAB_PAGE_URL_KEY, m_new_tab_page_url.serialize());
+    settings.set(NEW_TAB_SETTINGS_KEY, m_new_tab_settings);
 
     JsonObject tab_settings;
     tab_settings.set(VERTICAL_TABS_ENABLED_KEY, m_tab_settings.vertical_tabs_enabled);
@@ -475,6 +481,98 @@ void Settings::set_new_tab_page_url(URL::URL new_tab_page_url)
 
     for (auto& observer : m_observers)
         observer.new_tab_page_url_changed();
+}
+
+JsonValue Settings::parse_new_tab_settings(JsonValue const& value)
+{
+    JsonObject result;
+    JsonObject input = value.is_object() ? value.as_object() : JsonObject {};
+    result.set("enabled"sv, input.get_bool("enabled"sv).value_or(true));
+    result.set("showBookmarksBar"sv, input.get_bool("showBookmarksBar"sv).value_or(true));
+    auto theme = input.get_string("theme"sv).value_or("catppuccin-mocha"_string);
+    if (!theme.is_one_of("catppuccin-mocha"sv, "dark"sv, "light"sv, "system"sv))
+        theme = "catppuccin-mocha"_string;
+    result.set("theme"sv, move(theme));
+    auto rows = input.get_integer<u32>("rowsPerSection"sv).value_or(6);
+    result.set("rowsPerSection"sv, clamp(rows, 3u, 50u));
+
+    JsonArray sections;
+    if (auto array = input.get_array("sections"sv); array.has_value()) {
+        HashTable<String> seen;
+        for (auto const& item : array->values()) {
+            if (!item.is_string() || !item.as_string().is_one_of("pins"sv, "bookmarks"sv, "tabs"sv, "history"sv, "frequent"sv, "closed"sv))
+                continue;
+            if (seen.set(item.as_string()) == HashSetResult::InsertedNewEntry)
+                sections.must_append(item);
+        }
+    } else {
+        for (auto name : { "pins"sv, "bookmarks"sv, "tabs"sv, "history"sv, "frequent"sv, "closed"sv })
+            sections.must_append(name);
+    }
+    // Keep the positions of hidden sections so re-enabling one restores its place.
+    JsonArray order;
+    HashTable<String> ordered;
+    auto requested_order = input.get_array("sectionOrder"sv);
+    for (auto const& item : requested_order.has_value() ? requested_order->values() : sections.values()) {
+        if (item.is_string() && item.as_string().is_one_of("pins"sv, "bookmarks"sv, "tabs"sv, "history"sv, "frequent"sv, "closed"sv)
+            && ordered.set(item.as_string()) == HashSetResult::InsertedNewEntry)
+            order.must_append(item);
+    }
+    for (auto name : { "pins"sv, "bookmarks"sv, "tabs"sv, "history"sv, "frequent"sv, "closed"sv }) {
+        if (!ordered.contains(name))
+            order.must_append(name);
+    }
+    JsonArray visible_sections;
+    for (auto const& item : order.values()) {
+        for (auto const& section : sections.values()) {
+            if (item.as_string() == section.as_string()) {
+                visible_sections.must_append(item);
+                break;
+            }
+        }
+    }
+    result.set("sectionOrder"sv, move(order));
+    result.set("sections"sv, move(visible_sections));
+
+    JsonArray pins;
+    HashTable<String> urls;
+    if (auto array = input.get_array("pins"sv); array.has_value()) {
+        for (auto const& item : array->values()) {
+            if (pins.size() >= 100)
+                break;
+            if (!item.is_object())
+                continue;
+            auto url_string = item.as_object().get_string("url"sv);
+            auto title = item.as_object().get_string("title"sv);
+            if (!url_string.has_value() || url_string->bytes().size() > 8192 || (title.has_value() && title->bytes().size() > 2000))
+                continue;
+            auto url = URL::Parser::basic_parse(*url_string);
+            if (!url.has_value() || !url->scheme().is_one_of("http"sv, "https"sv) || !url->username().is_empty() || !url->password().is_empty())
+                continue;
+            auto serialized = url->serialize();
+            if (urls.set(serialized) != HashSetResult::InsertedNewEntry)
+                continue;
+            JsonObject pin;
+            pin.set("url"sv, serialized);
+            pin.set("title"sv, title.value_or(url->serialized_host()));
+            pins.must_append(move(pin));
+        }
+    }
+    result.set("pins"sv, move(pins));
+    return result;
+}
+
+bool Settings::enhanced_new_tab_page_enabled() const
+{
+    return m_new_tab_settings.as_object().get_bool("enabled"sv).value_or(true);
+}
+
+void Settings::set_new_tab_settings(JsonValue const& settings)
+{
+    m_new_tab_settings = parse_new_tab_settings(settings);
+    persist_settings();
+    for (auto& observer : m_observers)
+        observer.new_tab_settings_changed();
 }
 
 TabSettings Settings::parse_tab_settings(JsonValue const& settings)

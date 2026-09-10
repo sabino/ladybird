@@ -41,7 +41,10 @@ set(ABOUT_PAGES
     bookmarks.html
     downloads.html
     history.html
+    newtab-license.txt
+    newtab.css
     newtab.html
+    newtab.js
     processes.html
     settings.html
     version.html

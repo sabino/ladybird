@@ -1,10 +1,16 @@
 const newTabPageURL = document.querySelector("#new-tab-page-url");
 const newTabPageURLReset = document.querySelector("#new-tab-page-url-reset");
+const enhancedNewTab = document.querySelector("#enhanced-new-tab");
 
 const loadSettings = settings => {
     newTabPageURL.classList.remove("error");
     newTabPageURL.value = settings.newTabPageURL;
+    enhancedNewTab.checked = settings.newTab?.enabled ?? true;
 };
+
+enhancedNewTab.addEventListener("change", () => {
+    ladybird.sendMessage("setEnhancedNewTabEnabled", enhancedNewTab.checked);
+});
 
 newTabPageURL.addEventListener("change", () => {
     newTabPageURL.classList.remove("success");

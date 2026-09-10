@@ -769,6 +769,10 @@ Tab::Tab(BrowserWindow* window, RefPtr<WebView::WebContentClient> parent_client,
 
     view().on_activate_tab = [this] {
         m_window->activate_tab(tab_index());
+        if (m_window->isMinimized())
+            m_window->showNormal();
+        m_window->raise();
+        m_window->activateWindow();
     };
 
     view().on_close = [this] {

@@ -421,7 +421,8 @@ BrowserWindow& Application::new_window(Vector<URL::URL> const& initial_urls, Win
         }
     });
 
-    auto should_focus_location_editor = initial_urls.size() == 1 && initial_urls.first() == WebView::Application::settings().new_tab_page_url();
+    auto should_focus_location_editor = initial_urls.size() == 1 && initial_urls.first() == WebView::Application::settings().new_tab_page_url()
+        && !(initial_urls.first() == URL::about_newtab() && WebView::Application::settings().enhanced_new_tab_page_enabled());
     if (should_focus_location_editor) {
         if (auto* tab = window->current_tab())
             tab->set_url_is_hidden(true);
@@ -506,7 +507,10 @@ void Application::open_new_tab()
 
     auto& tab = m_active_window->new_tab_from_url(WebView::Application::settings().new_tab_page_url(), Web::HTML::ActivateTab::Yes, BrowserWindow::TabLocation::end());
     tab.set_url_is_hidden(true);
-    tab.focus_location_editor();
+    if (WebView::Application::settings().new_tab_page_url() == URL::about_newtab() && WebView::Application::settings().enhanced_new_tab_page_enabled())
+        tab.view().setFocus();
+    else
+        tab.focus_location_editor();
 }
 
 void Application::open_new_window(WebView::IsPrivate is_private)

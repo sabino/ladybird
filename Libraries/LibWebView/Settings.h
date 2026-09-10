@@ -90,6 +90,7 @@ public:
     virtual ~SettingsObserver();
 
     virtual void new_tab_page_url_changed() { }
+    virtual void new_tab_settings_changed() { }
     virtual void tab_settings_changed() { }
     virtual void show_menu_bar_changed() { }
     virtual void show_bookmarks_bar_changed() { }
@@ -116,6 +117,11 @@ public:
 
     URL::URL const& new_tab_page_url() const { return m_new_tab_page_url; }
     void set_new_tab_page_url(URL::URL);
+
+    static JsonValue parse_new_tab_settings(JsonValue const&);
+    JsonValue const& new_tab_settings() const { return m_new_tab_settings; }
+    bool enhanced_new_tab_page_enabled() const;
+    void set_new_tab_settings(JsonValue const&);
 
     static TabSettings parse_tab_settings(JsonValue const&);
     TabSettings const& tab_settings() const { return m_tab_settings; }
@@ -195,6 +201,7 @@ private:
     ByteString m_settings_path;
 
     URL::URL m_new_tab_page_url;
+    JsonValue m_new_tab_settings;
     TabSettings m_tab_settings;
     bool m_show_menu_bar { false };
     bool m_show_bookmarks_bar { true };

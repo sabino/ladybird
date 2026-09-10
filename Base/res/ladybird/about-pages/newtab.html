@@ -1,13 +1,120 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="catppuccin-mocha">
+    <!-- Native adaptation of maxmilton/new-tab. See newtab-license.txt (MIT). -->
     <head>
-        <meta charset="UTF-8" />
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="referrer" content="no-referrer" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src resource:; script-src resource:; style-src resource:; img-src resource: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+        />
         <title>New Tab</title>
-        <link rel="icon" type="image/png" href="resource://icons/48x48/app-browser.png" />
-        <style>
-            html {
-                color-scheme: light dark;
-            }
-        </style>
+        <link rel="icon" href="resource://icons/48x48/app-browser.png" type="image/png" />
+        <link rel="stylesheet" href="resource://ladybird/about-pages/newtab.css" />
+        <script src="resource://ladybird/about-pages/newtab.js" defer></script>
     </head>
+    <body>
+        <nav id="bookmark-bar" aria-label="Bookmark shortcuts"></nav>
+        <main>
+            <header class="toolbar">
+                <a class="brand" href="about:newtab" aria-label="Start page"
+                    ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z" /></svg
+                    ><span>New Tab</span></a
+                >
+                <div class="tools">
+                    <button id="refresh" title="Refresh bookmarks and history">Refresh</button
+                    ><button id="settings-button" aria-expanded="false" aria-controls="settings">Customize</button>
+                </div>
+            </header>
+            <form id="search-form" role="search">
+                <label class="sr-only" for="search">Search bookmarks, history and tabs</label>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="10.5" cy="10.5" r="6.5" />
+                        <path d="m16 16 5 5" /></svg
+                    ><input
+                        id="search"
+                        type="search"
+                        placeholder="Search bookmarks, history and tabs"
+                        autocomplete="off"
+                        spellcheck="false"
+                        maxlength="500"
+                        autofocus
+                    /><kbd>/</kbd>
+                </div>
+            </form>
+            <nav id="filters" class="filters" aria-label="Show links from"></nav>
+            <div id="status" role="status" aria-live="polite">Loading your links…</div>
+            <div id="warnings" role="alert" hidden></div>
+            <p id="private-note" class="hint" hidden>
+                Private window: only private tabs and recently closed pages are listed. Browsing history is not saved.
+            </p>
+            <section id="settings" class="panel" aria-labelledby="settings-title" hidden>
+                <div class="section-heading">
+                    <h2 id="settings-title">Customize new tab</h2>
+                    <button id="settings-close" class="quiet" aria-label="Close settings">Close</button>
+                </div>
+                <form id="settings-form">
+                    <div class="form-grid">
+                        <label
+                            >Theme<select id="theme">
+                                <option value="catppuccin-mocha">Catppuccin Mocha</option>
+                                <option value="system">System</option>
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select></label
+                        >
+                        <label
+                            >Rows per section<select id="rows-per-section">
+                                <option>3</option>
+                                <option>6</option>
+                                <option>10</option>
+                                <option>20</option>
+                                <option>50</option>
+                            </select></label
+                        >
+                    </div>
+                    <label class="check"><input id="show-bookmarks-bar" type="checkbox" />Show bookmarks bar</label>
+                    <fieldset>
+                        <legend>Sections and display order</legend>
+                        <p class="hint">
+                            Move sections up or down. Uncheck a section to hide it, including from search.
+                        </p>
+                        <ul id="section-order"></ul>
+                    </fieldset>
+                    <button id="reset-layout" class="quiet" type="button">Reset layout</button>
+                    <p class="hint">
+                        Web searches use the search engine in <a href="about:settings#search">browser settings</a>.
+                        Choose a blank new tab in <a href="about:settings#general">General settings</a>.
+                    </p>
+                    <button class="primary" type="submit">Save settings</button
+                    ><span id="settings-message" role="status"></span>
+                </form>
+            </section>
+            <section id="pin-editor" class="panel" aria-labelledby="pin-title" hidden>
+                <div class="section-heading">
+                    <h2 id="pin-title">Add shortcut</h2>
+                    <button id="pin-close" class="quiet" aria-label="Close shortcut form">Close</button>
+                </div>
+                <form id="pin-form">
+                    <label
+                        >Name<input id="pin-name" maxlength="500" required placeholder="A name you recognize" /></label
+                    ><label>Website<input id="pin-url" type="url" required placeholder="https://example.com" /></label
+                    ><button class="primary" type="submit">Save shortcut</button
+                    ><span id="pin-message" role="status"></span>
+                </form>
+            </section>
+            <div id="content"></div>
+            <footer>
+                <span id="freshness"></span
+                ><span
+                    ><kbd>/</kbd> Search
+                    <span class="footer-gap"><kbd>↑</kbd><kbd>↓</kbd> Browse <kbd>Enter</kbd> Open</span></span
+                >
+            </footer>
+        </main>
+        <div id="toast" role="status" hidden></div>
+        <noscript>This start page requires JavaScript to show your links.</noscript>
+    </body>
 </html>

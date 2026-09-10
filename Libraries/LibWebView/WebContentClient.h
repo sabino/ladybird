@@ -133,6 +133,7 @@ public:
     void set_pid(pid_t pid) { m_process_handle.pid = pid; }
 
 private:
+    friend class WebUI;
     friend class SiteIsolationManager;
 
     void maybe_record_history_visit_for_current_load(u64 page_id, URL::URL const&, Optional<String> title, StringView reason);

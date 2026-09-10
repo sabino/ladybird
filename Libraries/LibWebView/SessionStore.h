@@ -113,6 +113,7 @@ public:
     void application_quit_aborted();
 
     bool has_closed_units() const;
+    Vector<URL::URL> recently_closed_urls(size_t limit = 40) const;
     ErrorOr<Optional<ClosedSessionUnit>> take_most_recently_closed();
     ErrorOr<void> remove_entries_accessed_since(UnixDateTime);
 
@@ -377,6 +378,7 @@ private:
         }
 
         bool has_closed_units() const { return !m_closed_units.is_empty(); }
+        Vector<URL::URL> recently_closed_urls(size_t limit) const;
         void set_closed_units(Vector<ClosedUnit>);
         void append_closed_unit(ClosedUnit);
         ClosedUnit const* last_closed_unit() const;

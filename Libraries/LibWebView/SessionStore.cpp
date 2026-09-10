@@ -1747,6 +1747,24 @@ bool SessionStore::has_closed_units() const
     return m_transient_storage.has_closed_units();
 }
 
+Vector<URL::URL> SessionStore::TransientStorage::recently_closed_urls(size_t limit) const
+{
+    Vector<URL::URL> urls;
+    for (size_t index = m_closed_units.size(); index > 0 && urls.size() < limit; --index) {
+        for (auto const& tab : m_closed_units[index - 1].tabs) {
+            if (urls.size() == limit)
+                break;
+            urls.append(tab.active_url);
+        }
+    }
+    return urls;
+}
+
+Vector<URL::URL> SessionStore::recently_closed_urls(size_t limit) const
+{
+    return m_transient_storage.recently_closed_urls(min(limit, 100uz));
+}
+
 ErrorOr<Optional<ClosedSessionUnit>> SessionStore::take_most_recently_closed()
 {
     auto const* unit = m_transient_storage.last_closed_unit();
