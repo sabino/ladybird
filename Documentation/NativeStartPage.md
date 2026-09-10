@@ -45,15 +45,19 @@ The four-job limit keeps resource use reasonable on this laptop. Ccache is enabl
 when installed. Keep Build/caches to reuse dependencies; deleting Build/release
 requires rebuilding the browser. Do not run builds as root.
 
-To install only the browser runtime in your home directory:
+To install the browser runtime in your home directory, choose a fresh prefix for
+each build. The installer copies the dynamically linked vcpkg dependencies and
+their licenses as well as Ladybird itself:
 
 ```sh
-cmake --install Build/release --component ladybird_Runtime --strip \
-  --prefix "$HOME/.local/opt/ladybird-native"
+python3 Meta/install-native-start-page.py \
+  --prefix "$HOME/.local/opt/ladybird-native/build-1"
 ```
 
-The installed runtime includes its helper processes, shared libraries, and bundled
-resources. Keep the unstripped build outputs if you want symbols for debugging.
+Launch with `build-1/bin/ladybird-native` inside that installation directory. The
+wrapper uses the system certificate bundle and font configuration. The installed
+runtime includes its helper processes, shared libraries, and bundled resources.
+Keep the unstripped build outputs if you want symbols for debugging.
 Run TestNewTabSettings and TestSessionStore after building those targets.
 
 ## Implementation boundaries
