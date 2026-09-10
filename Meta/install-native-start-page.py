@@ -64,6 +64,17 @@ def main():
 
     if (dependencies / "etc/ssl").is_dir():
         shutil.copytree(dependencies / "etc/ssl", prefix / "etc/ssl", dirs_exist_ok=True)
+    # Keep configuration matched to the bundled Fontconfig version and within
+    # the resource fonts directory that sandboxed helper processes can read.
+    if (dependencies / "etc/fonts").is_dir():
+        fontconfig = prefix / "share/Lagom/fonts/fontconfig"
+        shutil.copytree(dependencies / "etc/fonts", fontconfig, dirs_exist_ok=True)
+        config = fontconfig / "fonts.conf"
+        config.write_text(
+            config.read_text().replace(
+                "<dir>/usr/share/fonts</dir>", '<dir prefix="relative">..</dir>\n\t<dir>/usr/share/fonts</dir>'
+            )
+        )
     licenses = prefix / "share/licenses/ladybird-native"
     licenses.mkdir(parents=True, exist_ok=True)
     shutil.copy2(Path(__file__).resolve().parent.parent / "LICENSE", licenses / "LICENSE")
@@ -82,8 +93,8 @@ if [ ! -r "$LADYBIRD_CERT_BUNDLE" ]; then
     exit 1
 fi
 export LD_LIBRARY_PATH="$LADYBIRD_NATIVE_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export FONTCONFIG_PATH="${FONTCONFIG_PATH:-/etc/fonts}"
-export FONTCONFIG_FILE="${FONTCONFIG_FILE:-/etc/fonts/fonts.conf}"
+export FONTCONFIG_PATH="${FONTCONFIG_PATH:-$LADYBIRD_NATIVE_ROOT/share/Lagom/fonts/fontconfig}"
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-$LADYBIRD_NATIVE_ROOT/share/Lagom/fonts/fontconfig/fonts.conf}"
 if [ -f "$LADYBIRD_NATIVE_ROOT/etc/ssl/openssl.cnf" ]; then
     export OPENSSL_CONF="${OPENSSL_CONF:-$LADYBIRD_NATIVE_ROOT/etc/ssl/openssl.cnf}"
 fi

@@ -55,7 +55,8 @@ python3 Meta/install-native-start-page.py \
 ```
 
 Launch with `build-1/bin/ladybird-native` inside that installation directory. The
-wrapper uses the system certificate bundle and font configuration. The installed
+wrapper uses the system certificate bundle and bundled Fontconfig configuration
+that can discover system fonts and the bundled fallback fonts. The installed
 runtime includes its helper processes, shared libraries, and bundled resources.
 Keep the unstripped build outputs if you want symbols for debugging.
 Run TestNewTabSettings and TestSessionStore after building those targets.
